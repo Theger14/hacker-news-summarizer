@@ -1,0 +1,4 @@
+{
+  "GOOGLE_AI_API_KEY": "YOUR_ACTUAL_GOOGLE_AI_API_KEY",
+  "CORS_PROXY_URL": "https://your-actual-cors-proxy.com/"
+}
