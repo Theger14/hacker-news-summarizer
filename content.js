@@ -88,6 +88,7 @@ async function processHackerNewsLinks() {
     const linkElements = document.querySelectorAll('.titleline > a');
     const batchSize = 10;
     let pauseDuration = 5000; // in milliseconds
+    let backoff = 2;
 
     // Request config from background script
     chrome.runtime.sendMessage({ requestConfig: true }, async (response) => {
@@ -99,7 +100,8 @@ async function processHackerNewsLinks() {
                 startIndex += batchSize;
                 if (startIndex < linkElements.length) {
                     await new Promise(resolve => setTimeout(resolve, pauseDuration));
-                    pauseDuration += 5000;
+                    pauseDuration *= backoff;
+                    backoff++;
                 }
             }
         } else {
