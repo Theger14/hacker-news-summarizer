@@ -86,7 +86,7 @@ async function processBatch(linkElements, startIndex, batchSize, proxyUrl) { // 
 
 async function processHackerNewsLinks() {
     const linkElements = document.querySelectorAll('.titleline > a');
-    const batchSize = 15;
+    const batchSize = 10;
     const pauseDuration = 60000; // in milliseconds
 
     // Request config from background script

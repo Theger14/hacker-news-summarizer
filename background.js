@@ -39,7 +39,7 @@ async function summarizeText(text, apiKey) {
     try {
         const prompt = `Summarize the following text in 50-100 words, focusing on the key arguments and findings, in a style suitable for Hacker News readers (developers and tech enthusiasts).  Provide a concise, informative summary.\n\n${text}`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
