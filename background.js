@@ -1,77 +1,91 @@
 async function loadConfig() {
-    const response = await fetch(chrome.runtime.getURL('config.json'));
-    return await response.json();
+  const response = await fetch(chrome.runtime.getURL('config.json'));
+  return await response.json();
 }
 
 let config; // Global variable to store the config
 
 // Load the config when the background script starts
 loadConfig().then(loadedConfig => {
-    config = loadedConfig;
+  config = loadedConfig;
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.requestConfig) {
-        if (config) {
-            sendResponse({ config: config });
-        } else {
-            // Optionally handle the case where config hasn't loaded yet
-            sendResponse({ error: "Config not loaded yet." });
-        }
-        return; // Don't try to summarize
+  if (message.requestConfig) {
+    if (config) {
+      sendResponse({ config: config });
+    } else {
+      sendResponse({ error: "Config not loaded yet." });
     }
+    return; // Don't try to summarize
+  }
 
-    if (message.text) {
-        summarizeText(message.text, config.GOOGLE_AI_API_KEY) // Use config.GOOGLE_AI_API_KEY
-            .then(summary => {
-                sendResponse(summary);
-            })
-            .catch(error => {
-                console.error("Error in background script:", error);
-                sendResponse({ error: "Failed to summarize." });
-            });
-        return true;
+  if (message.text) {
+    if (!config) {
+      sendResponse({ error: "Configuration not loaded. Cannot summarize." });
+      return true;
     }
-
+    summarizeText(message.text, config) // Pass the entire config object
+      .then(summary => {
+        sendResponse(summary);
+      })
+      .catch(error => {
+        console.error("Error in background script:", error);
+        sendResponse({ error: "Failed to summarize." });
+      });
+    return true;
+  }
 });
 
-async function summarizeText(text, apiKey) {
-    try {
-        const prompt = `Summarize the following text in 50-100 words, focusing on the key arguments and findings, in a style suitable for Hacker News readers (developers and tech enthusiasts).  Provide a concise, informative summary.\n\n${text}`;
+async function summarizeText(text, config) {
+  const { API_ENDPOINT_URL, API_KEY, MODEL_NAME, SYSTEM_PROMPT } = config;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt,
-                    }],
-                }],
-            }),
-        });
+  try {
+    const response = await fetch(API_ENDPOINT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages: [
+          {
+            role: "system",
+            content: SYSTEM_PROMPT
+          },
+          {
+            role: "user",
+            content: text
+          }
+        ],
+        temperature: 0.5,
+        max_tokens: 150
+      }),
+    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Gemini API Error:", errorData);
-            let errorMessage = `API Error: ${response.status}`;
-            if (errorData.error && errorData.error.message) {
-                errorMessage += ` - ${errorData.error.message}`;
-            }
-            return { error: errorMessage };
-        }
-
-        const data = await response.json();
-        if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
-            return { summary: data.candidates[0].content.parts[0].text };
-        } else {
-            return { error: "Unexpected response format from Gemini API." };
-        }
-
-    } catch (error) {
-        console.error("Summarization Error:", error);
-        return { error: "An unexpected error occurred." };
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("API Error:", errorData);
+      let errorMessage = `API Error: ${response.status}`;
+      if (errorData.error && errorData.error.message) {
+        errorMessage += ` - ${errorData.error.message}`;
+      }
+      return { error: errorMessage };
     }
+
+    const data = await response.json();
+    
+    if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+      return { summary: data.choices[0].message.content.trim() };
+    } else {
+      // Log the problematic response for easier debugging
+      console.error("Unexpected response format from API:", data);
+      return { error: "Unexpected response format from API." };
+    }
+
+  } catch (error) {
+    console.error("Summarization Fetch Error:", error);
+    return { error: "An unexpected network error occurred." };
+  }
 }

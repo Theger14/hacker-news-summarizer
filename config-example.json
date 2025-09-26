@@ -1,4 +1,7 @@
 {
-  "GOOGLE_AI_API_KEY": "YOUR_ACTUAL_GOOGLE_AI_API_KEY",
-  "CORS_PROXY_URL": "https://your-actual-cors-proxy.com/"
+  "CORS_PROXY_URL": "https://your-actual-cors-proxy.com/",
+  "API_ENDPOINT_URL": "https://your-actual-api-endpoint.com/v1/chat/completions",
+  "API_KEY": "YOUR_ACTUAL_API_KEY",
+  "MODEL_NAME": "model-name",
+  "SYSTEM_PROMPT": "You are a helpful assistant. Summarize the following article text in 50-100 words, focusing on the key arguments and findings. Your style should be concise and informative, suitable for a tech-savvy audience on Hacker News. In your output, include only the summary text without any additional commentary or formatting."
 }
